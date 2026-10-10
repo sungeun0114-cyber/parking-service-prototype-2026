@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주차 서비스 앱 프로토타입 (차량번호 출입차)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                        },
+                        amber: {
+                            500: '#f59e0b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen py-6 px-4">
+
+    <!-- 스마트폰 목업 프레임 -->
+    <div class="w-full max-w-[400px] h-[844px] bg-white rounded-[40px] shadow-2xl border-[8px] border-slate-800 flex flex-col relative overflow-hidden">
+        
+        <!-- 상단 상태바 -->
+        <div class="h-11 bg-white w-full px-6 flex justify-between items-center z-50 shrink-0 border-b border-slate-100">
+            <span class="text-sm font-bold text-slate-800" id="current-time">09:41</span>
+            <div class="w-28 h-4 bg-slate-900 rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-2"></div>
+            <div class="flex items-center space-x-2 text-xs text-slate-700">
+                <i class="fa-solid fa-signal"></i>
+                <i class="fa-solid fa-wifi"></i>
+                <i class="fa-solid fa-battery-full"></i>
+            </div>
+        </div>
+
+        <!-- 앱 컨텐츠 영역 (스크롤 가능) -->
+        <div id="app-container" class="flex-1 overflow-y-auto relative bg-slate-50 hide-scrollbar flex flex-col">
+            <!-- 동적으로 화면이 렌더링되는 곳입니다 -->
+        </div>
+
+        <!-- 하단 네비게이션 탭 (홈, 이용 현황, 마이페이지) -->
+        <div id="bottom-nav" class="h-16 bg-white border-t border-slate-200 grid grid-cols-3 shrink-0 z-40 hidden">
+            <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center justify-center text-brand-500 transition-colors">
+                <i class="fa-solid fa-house text-lg mb-1"></i>
+                <span class="text-[11px] font-medium">홈</span>
+            </button>
+            <button onclick="switchTab('status')" id="nav-status" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-600 transition-colors relative">
+                <i class="fa-solid fa-car-side text-lg mb-1"></i>
+                <span class="text-[11px] font-medium">이용 현황</span>
+                <!-- 이용 중 알림 뱃지 -->
+                <span id="active-badge" class="absolute top-2 right-10 w-2 h-2 bg-emerald-500 rounded-full hidden"></span>
+            </button>
+            <button onclick="switchTab('mypage')" id="nav-mypage" class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
+                <i class="fa-solid fa-user text-lg mb-1"></i>
+                <span class="text-[11px] font-medium">마이페이지</span>
+            </button>
+        </div>
+
+        <!-- 하단 홈바 -->
+        <div class="h-5 bg-white w-full flex items-center justify-center shrink-0 z-50 pb-1">
+            <div class="w-32 h-1 bg-slate-300 rounded-full"></div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 앱 상태 관리
+        let appState = {
+            currentScreen: 'onboarding', // onboarding, vehicle_register, home, map_compare, detail, entry_complete, status, payment, payment_loading, payment_complete, exit_complete, mypage
+            carNumber: '123가 4567',
+            paymentMethod: '신용카드 (KB국민 0000)',
+            destination: '강남역 스파크플러스',
+            selectedParking: {
+                name: '강남역 공영주차장',
+                distance: '도보 3분 (240m)',
+                fee: '최초 30분 2,000원 / 10분당 1,000원',
+                status: '여유',
+                statusColor: 'bg-emerald-100 text-emerald-700',
+                rating: 4.6
+            },
+            isParkingActive: false,
+            entryTime: null,
+            timerInterval: null
+        };
+
+        // 시간 표시 업데이트
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('current-time').innerText = `${hours}:${minutes}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // 화면 전환 함수
+        function navigate(screenName) {
+            appState.currentScreen = screenName;
+            render();
+        }
+
+        // 하단 탭 전환 함수
+        function switchTab(tab) {
+            const navHome = document.getElementById('nav-home');
+            const navStatus = document.getElementById('nav-status');
+            const navMypage = document.getElementById('nav-mypage');
+
+            // 스타일 초기화
+            [navHome, navStatus, navMypage].forEach(el => {
+                el.className = "flex flex-col items-center justify-center text-slate-400 hover:text-slate-600 transition-colors";
+            });
+
+            if (tab === 'home') {
+                navHome.className = "flex flex-col items-center justify-center text-brand-500 transition-colors";
+                navigate('home');
+            } else if (tab === 'status') {
+                navStatus.className = "flex flex-col items-center justify-center text-brand-500 transition-colors";
+                navigate('status');
+            } else if (tab === 'mypage') {
+                navMypage.className = "flex flex-col items-center justify-center text-brand-500 transition-colors";
+                navigate('mypage');
+            }
+        }
+
+        // 메인 렌더링 라우터
+        function render() {
+            const container = document.getElementById('app-container');
+            const bottomNav = document.getElementById('bottom-nav');
+
+            // 하단 네비게이션 표시 여부 결정 (온보딩, 차량등록, 결제로딩 등 일부 화면은 숨김)
+            const hideNavScreens = ['onboarding', 'vehicle_register', 'payment_loading', 'payment_complete', 'exit_complete'];
+            if (hideNavScreens.includes(appState.currentScreen)) {
+                bottomNav.classList.add('hidden');
+            } else {
+                bottomNav.classList.remove('hidden');
+                // 활성 탭 하이라이트 동기화
+                if (['home', 'map_compare', 'detail'].includes(appState.currentScreen)) {
+                    document.getElementById('nav-home').className = "flex flex-col items-center justify-center text-brand-500 transition-colors";
+                    document.getElementById('nav-status').className = "flex flex-col items-center justify-center text-slate-400 transition-colors";
+                    document.getElementById('nav-mypage').className = "flex flex-col items-center justify-center text-slate-400 transition-colors";
+                } else if (['status', 'payment'].includes(appState.currentScreen)) {
+                    document.getElementById('nav-home').className = "flex flex-col items-center justify-center text-slate-400 transition-colors";
+                    document.getElementById('nav-status').className = "flex flex-col items-center justify-center text-brand-500 transition-colors";
+                    document.getElementById('nav-mypage').className = "flex flex-col items-center justify-center text-slate-400 transition-colors";
+                } else if (['mypage', 'vehicle_manage'].includes(appState.currentScreen)) {
+                    document.getElementById('nav-home').className = "flex flex-col items-center justify-center text-slate-400 transition-colors";
+                    document.getElementById('nav-status').className = "flex flex-col items-center justify-center text-slate-400 transition-colors";
+                    document.getElementById('nav-mypage').className = "flex flex-col items-center justify-center text-brand-500 transition-colors";
+                }
+            }
+
+            // 이용 중 뱃지 토글
+            const activeBadge = document.getElementById('active-badge');
+            if (appState.isParkingActive) {
+                activeBadge.classList.remove('hidden');
+            } else {
+                activeBadge.classList.add('hidden');
+            }
+
+            // 화면별 HTML 렌더링
+            switch(appState.currentScreen) {
+                case 'onboarding':
+                    container.innerHTML = renderOnboarding();
+                    break;
+                case 'vehicle_register':
+                    container.innerHTML = renderVehicleRegister();
+                    break;
+                case 'home':
+                    container.innerHTML = renderHome();
+                    break;
+                case 'map_compare':
+                    container.innerHTML = renderMapCompare();
+                    break;
+                case 'detail':
+                    container.innerHTML = renderDetail();
+                    break;
+                case 'entry_simulation':
+                    container.innerHTML = renderEntrySimulation();
+                    break;
+                case 'status':
+                    container.innerHTML = renderStatus();
+                    break;
+                case 'payment':
+                    container.innerHTML = renderPayment();
+                    break;
+                case 'payment_loading':
+                    container.innerHTML = renderPaymentLoading();
+                    break;
+                case 'payment_complete':
+                    container.innerHTML = renderPaymentComplete();
+                    break;
+                case 'exit_complete':
+                    container.innerHTML = renderExitComplete();
+                    break;
+                case 'mypage':
+                    container.innerHTML = renderMypage();
+                    break;
+                case 'vehicle_manage':
+                    container.innerHTML = renderVehicleManage();
+                    break;
+                default:
+                    container.innerHTML = renderHome();
+            }
+        }
+    </script>
+
+    <script>
+        // 1. 온보딩 화면
+        function renderOnboarding() {
+            return `
+                <div class="flex-1 flex flex-col justify-between p-6 bg-gradient-to-b from-brand-500 to-brand-700 text-white">
+                    <div class="pt-12 text-center">
+                        <div class="w-20 h-20 bg-white/10 backdrop-blur rounded-3xl mx-auto flex items-center justify-center text-4xl mb-6 shadow-inner border border-white/20">
+                            🚗
+                        </div>
+                        <span class="bg-amber-500 text-slate-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">주차 서비스 프로토타입</span>
+                        <h1 class="text-2xl font-bold mt-4 leading-snug">낯선 곳에서도 주차를 쉽고 빠르게</h1>
+                        <p class="text-brand-100 text-sm mt-2">목적지 주변 주차장 비교부터<br>차량번호 인식 입차, 앱 정산까지 한 번에!</p>
+                    </div>
+
+                    <div class="space-y-4 pb-8">
+                        <button onclick="navigate('vehicle_register')" class="w-full bg-white text-brand-600 font-bold py-4 rounded-2xl shadow-lg hover:bg-brand-50 transition-all flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-user-circle text-lg"></i>
+                            <span>간편 로그인 (카카오/네이버)</span>
+                        </button>
+                        <button onclick="navigate('home')" class="w-full bg-transparent border border-white/40 text-white font-medium py-3 rounded-2xl hover:bg-white/10 transition-all text-sm">
+                            나중에 하기 (둘러보기)
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 2. 차량 및 결제수단 등록 화면 (수정된 차량번호 중심)
+        function renderVehicleRegister() {
+            return `
+                <div class="flex-1 flex flex-col p-6 bg-white justify-between">
+                    <div>
+                        <div class="flex items-center mb-6">
+                            <button onclick="navigate('onboarding')" class="text-slate-600 mr-4"><i class="fa-solid fa-arrow-left text-lg"></i></button>
+                            <h2 class="text-lg font-bold text-slate-800">차량·결제수단 등록</h2>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-6">차량번호를 등록하면 입·출차 시 자동 인식 및 앱 정산이 원활하게 연동됩니다.</p>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">차량 번호</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-car"></i></span>
+                                    <input type="text" id="input-car-num" value="${appState.carNumber}" class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:border-brand-500" placeholder="예: 123가 4567">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">결제수단 등록 (간편결제/신용카드)</label>
+                                <div class="p-4 bg-brand-50 border border-brand-100 rounded-xl flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-brand-500 text-white rounded-lg flex items-center justify-center"><i class="fa-solid fa-credit-card"></i></div>
+                                        <div>
+                                            <p class="text-xs font-bold text-slate-800">KB국민카드 (간편결제 등록)</p>
+                                            <p class="text-[11px] text-slate-500">기본 결제수단으로 등록됨</p>
+                                        </div>
+                                    </div>
+                                    <i class="fa-solid fa-check text-brand-500"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4">
+                        <button onclick="saveVehicleAndProceed()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-2xl shadow-md transition-colors text-sm">
+                            등록 완료 및 시작하기
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function saveVehicleAndProceed() {
+            const val = document.getElementById('input-car-num').value;
+            if(val) appState.carNumber = val;
+            navigate('home');
+        }
+
+        // 3. 홈 화면 (목적지 검색)
+        function renderHome() {
+            return `
+                <div class="flex-1 flex flex-col p-6 bg-slate-50 justify-between">
+                    <div>
+                        <!-- 상단 타이틀 및 프로필 -->
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <span class="text-[11px] font-bold text-brand-600 bg-brand-100 px-2.5 py-1 rounded-full">주차 서비스</span>
+                                <h1 class="text-xl font-bold text-slate-900 mt-1">어디로 가시나요?</h1>
+                            </div>
+                            <div class="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center text-slate-600 font-bold text-sm">
+                                🚗
+                            </div>
+                        </div>
+
+                        <!-- 목적지 검색바 -->
+                        <div onclick="navigate('map_compare')" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center space-x-3 cursor-pointer hover:border-brand-500 transition-all">
+                            <i class="fa-solid fa-magnifying-glass text-brand-500"></i>
+                            <span class="text-sm text-slate-600 flex-1 font-medium">${appState.destination}</span>
+                            <span class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-lg">검색</span>
+                        </div>
+
+                        <!-- 최근 목적지 / 추천 배너 -->
+                        <div class="mt-6">
+                            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">최근 검색 목적지</h3>
+                            <div class="space-y-2">
+                                <div onclick="navigate('map_compare')" class="bg-white p-3.5 rounded-xl border border-slate-100 flex items-center justify-between cursor-pointer hover:bg-slate-50">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600"><i class="fa-solid fa-location-dot text-xs"></i></div>
+                                        <div>
+                                            <p class="text-xs font-bold text-slate-800">강남역 스파크플러스</p>
+                                            <p class="text-[11px] text-slate-400">서울 강남구 테헤란로</p>
+                                        </div>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-right text-xs text-slate-300"></i>
+                                </div>
+                                <div onclick="navigate('map_compare')" class="bg-white p-3.5 rounded-xl border border-slate-100 flex items-center justify-between cursor-pointer hover:bg-slate-50">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-600"><i class="fa-solid fa-location-dot text-xs"></i></div>
+                                        <div>
+                                            <p class="text-xs font-bold text-slate-800">코엑스몰 주차장</p>
+                                            <p class="text-[11px] text-slate-400">서울 강남구 영동대로</p>
+                                        </div>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-right text-xs text-slate-300"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 등록 차량 정보 카드 -->
+                        <div class="mt-6 bg-gradient-to-r from-brand-500 to-brand-600 rounded-2xl p-4 text-white shadow-md">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <p class="text-[11px] text-brand-100 font-medium">내 등록 차량</p>
+                                    <p class="text-base font-bold mt-0.5">${appState.carNumber}</p>
+                                </div>
+                                <button onclick="navigate('vehicle_manage')" class="bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl text-xs font-medium backdrop-blur transition-all">관리</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center pb-2">
+                        <p class="text-[11px] text-slate-400">입차 시 차량번호로 자동 인식·확인됩니다.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 4. 지도 및 비교 화면
+        function renderMapCompare() {
+            return `
+                <div class="flex-1 flex flex-col relative bg-slate-200">
+                    <!-- 가상 지도 배경 영역 -->
+                    <div class="absolute inset-0 bg-slate-200 overflow-hidden">
+                        <div class="w-full h-full opacity-40 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                        <!-- 지도 핀들 -->
+                        <div class="absolute top-1/4 left-1/3 bg-brand-500 text-white px-3 py-1.5 rounded-full shadow-lg text-xs font-bold flex items-center space-x-1 cursor-pointer animate-bounce" onclick="navigate('detail')">
+                            <i class="fa-solid fa-p"></i> <span>강남역 공영 (2,000원)</span>
+                        </div>
+                        <div class="absolute top-1/2 right-1/4 bg-white text-slate-800 px-3 py-1.5 rounded-full shadow-md text-xs font-bold border border-slate-300">
+                            역삼주차장 (3,000원)
+                        </div>
+                        <div class="absolute bottom-1/3 left-1/4 bg-white text-slate-800 px-3 py-1.5 rounded-full shadow-md text-xs font-bold border border-slate-300">
+                            테헤란로 민영 (2,500원)
+                        </div>
+                    </div>
+
+                    <!-- 상단 검색바 및 뒤로가기 -->
+                    <div class="p-4 z-10 flex items-center space-x-2">
+                        <button onclick="navigate('home')" class="w-10 h-10 bg-white rounded-2xl shadow-md flex items-center justify-center text-slate-700"><i class="fa-solid fa-arrow-left"></i></button>
+                        <div class="flex-1 bg-white px-4 py-2.5 rounded-2xl shadow-md border border-slate-200 flex items-center space-x-2 text-sm font-medium text-slate-800">
+                            <i class="fa-solid fa-magnifying-glass text-brand-500 text-xs"></i>
+                            <span>${appState.destination}</span>
+                        </div>
+                    </div>
+
+                    <!-- 하단 밀어올리는 주차장 비교 카드 리스트 -->
+                    <div class="mt-auto z-10 p-4 bg-white rounded-t-3xl shadow-2xl border-t border-slate-100 max-h-[360px] overflow-y-auto">
+                        <div class="w-12 h-1 bg-slate-300 rounded-full mx-auto mb-3"></div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xs font-bold text-slate-500">주변 주차장 비교 (거리·요금·여유순)</h3>
+                            <span class="text-xs text-brand-600 font-bold">3개 발견</span>
+                        </div>
+
+                        <!-- 주차장 카드 1 (선택 대상) -->
+                        <div onclick="navigate('detail')" class="bg-brand-50 border-2 border-brand-500 rounded-2xl p-4 mb-3 cursor-pointer shadow-sm">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="flex items-center space-x-2">
+                                        <h4 class="text-sm font-bold text-slate-900">${appState.selectedParking.name}</h4>
+                                        <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">여유</span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-0.5">${appState.selectedParking.distance} · ★ ${appState.selectedParking.rating}</p>
+                                </div>
+                                <span class="text-xs font-bold text-brand-600 bg-white px-2.5 py-1 rounded-xl shadow-xs">추천</span>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-brand-100 flex justify-between items-center text-xs">
+                                <span class="text-slate-600 font-medium">기본요금: 최초 30분 2,000원</span>
+                                <span class="font-bold text-brand-600">상세보기 &gt;</span>
+                            </div>
+                        </div>
+
+                        <!-- 주차장 카드 2 -->
+                        <div class="bg-white border border-slate-200 rounded-2xl p-4 mb-2 cursor-pointer hover:bg-slate-50">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="flex items-center space-x-2">
+                                        <h4 class="text-sm font-bold text-slate-900">역삼동 민영주차장</h4>
+                                        <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">보통</span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-0.5">도보 5분 (380m) · ★ 4.2</p>
+                                </div>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+                                <span class="text-slate-600 font-medium">기본요금: 최초 30분 3,000원</span>
+                                <span class="text-slate-400">비교</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 5. 주차장 상세 및 외부 지도 앱 연출 화면
+        function renderDetail() {
+            return `
+                <div class="flex-1 flex flex-col bg-white justify-between">
+                    <div>
+                        <!-- 상단바 -->
+                        <div class="p-4 flex items-center border-b border-slate-100">
+                            <button onclick="navigate('map_compare')" class="text-slate-600 mr-4"><i class="fa-solid fa-arrow-left text-lg"></i></button>
+                            <h2 class="text-base font-bold text-slate-800">주차장 상세 정보</h2>
+                        </div>
+
+                        <div class="p-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full">여유 상태: 여유</span>
+                                    <h1 class="text-lg font-bold text-slate-900 mt-2">${appState.selectedParking.name}</h1>
+                                    <p class="text-xs text-slate-500 mt-1">서울 강남구 역삼동 820-1 · ${appState.selectedParking.distance}</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-sm font-bold text-amber-500"><i class="fa-solid fa-star"></i> ${appState.selectedParking.rating}</span>
+                                </div>
+                            </div>
+
+                            <!-- 요금 정보 박스 -->
+                            <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 mb-4 space-y-2">
+                                <h3 class="text-xs font-bold text-slate-700">요금 안내</h3>
+                                <p class="text-xs text-slate-600">${appState.selectedParking.fee}</p>
+                                <p class="text-[11px] text-brand-600 font-medium"><i class="fa-solid fa-circle-info"></i> 앱 정산 시 정산기 앞 대기 없이 바로 출차 가능</p>
+                            </div>
+
+                            <!-- 외부 지도 앱 연결 연출 박스 -->
+                            <div class="bg-brand-50 border border-brand-100 rounded-2xl p-4 mb-4">
+                                <h3 class="text-xs font-bold text-brand-900 mb-2">외부 지도 앱으로 길안내 시작</h3>
+                                <p class="text-[11px] text-brand-700 mb-3">선택하신 주차장 위치로 바로 길안내를 연결합니다.</p>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button onclick="openExternalMap('네이버지도')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition-colors">
+                                        <i class="fa-solid fa-map-location-dot"></i>
+                                        <span>네이버 지도</span>
+                                    </button>
+                                    <button onclick="openExternalMap('티맵')" class="bg-slate-900 hover:bg-black text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition-colors">
+                                        <i class="fa-solid fa-location-arrow"></i>
+                                        <span>티맵 (TMAP)</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 차량번호 입차 시뮬레이션 버튼 -->
+                    <div class="p-6 bg-white border-t border-slate-100">
+                        <button onclick="navigate('entry_simulation')" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-2xl shadow-md transition-colors text-sm flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-car"></i>
+                            <span>주차장 도착 (차량번호 입차 확인)</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openExternalMap(mapName) {
+            alert(`${mapName} 앱으로 연동하여 길안내를 시작합니다! (프로토타입 시뮬레이션)`);
+        }
+
+        // 6. 수정된 핵심 기능: 차량번호 출입차 확인 화면
+        function renderEntrySimulation() {
+            return `
+                <div class="flex-1 flex flex-col bg-white p-6 justify-between text-center">
+                    <div class="pt-8">
+                        <div class="w-20 h-20 bg-brand-100 text-brand-600 rounded-full mx-auto flex items-center justify-center text-3xl mb-6 shadow-inner animate-pulse">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                        <span class="bg-brand-100 text-brand-700 text-xs font-bold px-3 py-1 rounded-full">차량번호 자동 출입차 인식</span>
+                        <h2 class="text-xl font-bold text-slate-900 mt-3">입차 확인 중...</h2>
+                        <p class="text-xs text-slate-500 mt-2">주차장 입구의 카메라가 번호판을 인식하여<br>입차 처리를 진행합니다.</p>
+                        
+                        <!-- 인식된 차량 번호 카드 -->
+                        <div class="mt-8 bg-slate-50 border-2 border-dashed border-brand-300 rounded-2xl p-5">
+                            <p class="text-xs text-slate-400 font-medium">인식된 차량 번호</p>
+                            <p class="text-2xl font-black text-slate-800 tracking-wider mt-1">${appState.carNumber}</p>
+                            <p class="text-[11px] text-emerald-600 font-bold mt-2"><i class="fa-solid fa-circle-check"></i> 등록된 차량 및 결제수단 확인 완료</p>
+                        </div>
+                    </div>
+
+                    <div class="pb-4 space-y-3">
+                        <button onclick="completeEntry()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-2xl shadow-md transition-colors text-sm">
+                            입차 완료 및 이용 시작하기
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function completeEntry() {
+            appState.isParkingActive = true;
+            appState.entryTime = new Date();
+            navigate('status');
+        }
+
+        // 7. 이용 현황 화면 (이용 중 / 빈 상태)
+        function renderStatus() {
+            if (!appState.isParkingActive) {
+                return `
+                    <div class="flex-1 flex flex-col p-6 bg-slate-50 justify-between items-center text-center">
+                        <div class="pt-16">
+                            <div class="w-20 h-20 bg-slate-200 text-slate-400 rounded-full mx-auto flex items-center justify-center text-3xl mb-4">
+                                <i class="fa-solid fa-car-side"></i>
+                            </div>
+                            <h2 class="text-base font-bold text-slate-800">이용 중인 주차장이 없어요</h2>
+                            <p class="text-xs text-slate-500 mt-1">목적지 검색 후 주차장을 이용해 보세요.</p>
+                        </div>
+                        <div class="w-full pb-6">
+                            <button onclick="navigate('home')" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-2xl shadow-md transition-colors text-sm">
+                                <i class="fa-solid fa-magnifying-glass mr-2"></i>주차장 검색하기
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="flex-1 flex flex-col p-6 bg-slate-50 justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-lg font-bold text-slate-900">실시간 이용 현황</h2>
+                            <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full flex items-center space-x-1">
+                                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
+                                <span>주차 이용 중</span>
+                            </span>
+                        </div>
+
+                        <!-- 주차 현황 카드 -->
+                        <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-200 mb-6 space-y-4">
+                            <div class="flex items-center space-x-3 pb-3 border-b border-slate-100">
+                                <div class="w-10 h-10 bg-brand-100 text-brand-600 rounded-xl flex items-center justify-center font-bold">P</div>
+                                <div>
+                                    <h3 class="text-sm font-bold text-slate-800">${appState.selectedParking.name}</h3>
+                                    <p class="text-[11px] text-slate-400">차량번호: ${appState.carNumber}</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 pt-1">
+                                <div class="bg-slate-50 p-3 rounded-2xl">
+                                    <p class="text-[11px] text-slate-400 font-medium">입차 시간</p>
+                                    <p class="text-sm font-bold text-slate-800 mt-0.5">방금 전 (입차완료)</p>
+                                </div>
+                                <div class="bg-slate-50 p-3 rounded-2xl">
+                                    <p class="text-[11px] text-slate-400 font-medium">이용 시간</p>
+                                    <p class="text-sm font-bold text-brand-600 mt-0.5" id="live-timer">0시간 12분</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-brand-50 p-4 rounded-2xl flex justify-between items-center">
+                                <div>
+                                    <p class="text-[11px] text-brand-600 font-medium">현재 누적 요금</p>
+                                    <p class="text-xl font-extrabold text-brand-700">2,000원</p>
+                                </div>
+                                <span class="text-xs bg-white text-brand-600 px-3 py-1.5 rounded-xl font-bold shadow-xs">기본요금 적용중</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800">
+                            <p class="font-bold mb-1"><i class="fa-solid fa-lightbulb mr-1"></i> 출차 안내</p>
+                            <p>볼일을 마치고 출차 직전에 아래 '정산하기' 버튼을 눌러 앱에서 간편하게 정산을 완료하세요. 정산 후 15분 이내에 출차하시면 됩니다.</p>
+                        </div>
+                    </div>
+
+                    <div class="pb-2">
+                        <button onclick="navigate('payment')" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-2xl shadow-lg transition-colors text-sm flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-credit-card"></i>
+                            <span>출차 직전 정산하기</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 8. 정산 및 결제수단 선택 화면
+        function renderPayment() {
+            return `
+                <div class="flex-1 flex flex-col p-6 bg-white justify-between">
+                    <div>
+                        <div class="flex items-center mb-6">
+                            <button onclick="navigate('status')" class="text-slate-600 mr-4"><i class="fa-solid fa-arrow-left text-lg"></i></button>
+                            <h2 class="text-lg font-bold text-slate-800">출차 직전 정산</h2>
+                        </div>
+
+                        <!-- 요금 정산 요약 -->
+                        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 mb-6 space-y-2">
+                            <div class="flex justify-between text-xs text-slate-500">
+                                <span>주차장</span>
+                                <span class="font-bold text-slate-800">${appState.selectedParking.name}</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-slate-500">
+                                <span>이용 시간</span>
+                                <span class="font-bold text-slate-800">1시간 15분</span>
+                            </div>
+                            <div class="pt-3 border-t border-slate-200 flex justify-between text-sm font-bold text-slate-900">
+                                <span>총 결제금액</span>
+                                <span class="text-brand-600 text-lg">3,000원</span>
+                            </div>
+                        </div>
+
+                        <!-- 결제수단 선택 -->
+                        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">결제수단 선택</h3>
+                        <div class="space-y-3">
+                            <div class="p-4 bg-brand-50 border-2 border-brand-500 rounded-2xl flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-brand-500 text-white rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-credit-card"></i></div>
+                                    <div>
+                                        <p class="text-xs font-bold text-slate-800">신용카드 (기본등록)</p>
+                                        <p class="text-[11px] text-slate-500">KB국민 0000-****</p>
+                                    </div>
+                                </div>
+                                <i class="fa-solid fa-circle-check text-brand-500"></i>
+                            </div>
+                            <div class="p-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-between opacity-60">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-slate-200 text-slate-600 rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-wallet"></i></div>
+                                    <div>
+                                        <p class="text-xs font-bold text-slate-800">간편결제 (카카오페이 / 네이버페이)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pb-2">
+                        <button onclick="startPaymentProcess()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-2xl shadow-md transition-colors text-sm">
+                            3,000원 결제하기
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function startPaymentProcess() {
+            navigate('payment_loading');
+            setTimeout(() => {
+                navigate('payment_complete');
+            }, 2000);
+        }
+
+        // 9. 결제 로딩 화면
+        function renderPaymentLoading() {
+            return `
+                <div class="flex-1 flex flex-col items-center justify-center p-6 bg-white text-center">
+                    <div class="w-16 h-16 border-4 border-brand-200 border-t-brand-500 rounded-full animate-spin mb-6"></div>
+                    <h2 class="text-lg font-bold text-slate-900">결제 진행 중입니다</h2>
+                    <p class="text-xs text-slate-500 mt-2">잠시만 기다려주세요. 안전하게 결제 처리 중입니다.</p>
+                </div>
+            `;
+        }
+
+        // 10. 결제 완료 및 유예 시간 안내 화면
+        function renderPaymentComplete() {
+            return `
+                <div class="flex-1 flex flex-col p-6 bg-white justify-between text-center">
+                    <div class="pt-8">
+                        <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full mx-auto flex items-center justify-center text-3xl mb-6 shadow-inner">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                        <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full">결제 완료</span>
+                        <h2 class="text-xl font-bold text-slate-900 mt-3">결제가 완료되었습니다!</h2>
+                        
+                        <!-- 유예 시간 안내 박스 -->
+                        <div class="mt-8 bg-brand-50 border border-brand-200 rounded-3xl p-6 text-center">
+                            <p class="text-xs text-brand-700 font-medium">출차 유예 시간</p>
+                            <p class="text-3xl font-black text-brand-600 mt-1">15분 남음</p>
+                            <p class="text-[11px] text-slate-500 mt-3">정산기 앞 대기 없이, 유예 시간 내에 차량번호 인식으로 바로 출차하세요!</p>
+                        </div>
+                    </div>
+
+                    <div class="pb-4 space-y-3">
+                        <button onclick="simulateExit()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-2xl shadow-md transition-colors text-sm">
+                            출차하러 가기 (차량번호 출차 인식)
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function simulateExit() {
+            appState.isParkingActive = false;
+            navigate('exit_complete');
+        }
+
+        // 11. 출차 완료 화면
+        function renderExitComplete() {
+            return `
+                <div class="flex-1 flex flex-col p-6 bg-white justify-between text-center">
+                    <div class="pt-12">
+                        <div class="w-20 h-20 bg-brand-100 text-brand-600 rounded-full mx-auto flex items-center justify-center text-3xl mb-6 shadow-inner">
+                            <i class="fa-solid fa-car-on"></i>
+                        </div>
+                        <span class="bg-brand-100 text-brand-700 text-xs font-bold px-3 py-1 rounded-full">출차 완료</span>
+                        <h2 class="text-xl font-bold text-slate-900 mt-3">안전하게 출차되었습니다</h2>
+                        <p class="text-xs text-slate-500 mt-2">이용해 주셔서 감사합니다. 다음에 또 편리하게 이용하세요!</p>
+                    </div>
+
+                    <div class="pb-6">
+                        <button onclick="navigate('home')" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-2xl shadow-md transition-colors text-sm">
+                            홈으로 돌아가기
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 12. 마이페이지 화면
+        function renderMypage() {
+            return `
+                <div class="flex-1 flex flex-col p-6 bg-slate-50 justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 mb-6">마이페이지</h2>
+
+                        <!-- 프로필 카드 -->
+                        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex items-center space-x-4 mb-6">
+                            <div class="w-12 h-12 bg-brand-500 text-white rounded-full flex items-center justify-center font-bold text-lg">
+                                🚗
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-800">방문객 운전자님</h3>
+                                <p class="text-xs text-slate-400">간편 로그인 회원 (목업)</p>
+                            </div>
+                        </div>
+
+                        <!-- 관리 메뉴 리스트 -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div onclick="navigate('vehicle_manage')" class="p-4 flex justify-between items-center border-b border-slate-100 cursor-pointer hover:bg-slate-50">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fa-solid fa-car text-brand-500"></i>
+                                    <span class="text-xs font-bold text-slate-800">차량 관리</span>
+                                </div>
+                                <span class="text-xs text-slate-400">${appState.carNumber} &gt;</span>
+                            </div>
+                            <div class="p-4 flex justify-between items-center border-b border-slate-100 cursor-pointer hover:bg-slate-50">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fa-solid fa-credit-card text-brand-500"></i>
+                                    <span class="text-xs font-bold text-slate-800">결제수단 관리</span>
+                                </div>
+                                <span class="text-xs text-slate-400">KB국민카드 &gt;</span>
+                            </div>
+                            <div class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fa-solid fa-receipt text-brand-500"></i>
+                                    <span class="text-xs font-bold text-slate-800">이용 내역</span>
+                                </div>
+                                <span class="text-xs text-slate-400">&gt;</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center pb-2">
+                        <button onclick="navigate('onboarding')" class="text-xs text-slate-400 underline">로그아웃 / 온보딩으로 이동</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 13. 차량 관리 화면
+        function renderVehicleManage() {
+            return `
+                <div class="flex-1 flex flex-col p-6 bg-white justify-between">
+                    <div>
+                        <div class="flex items-center mb-6">
+                            <button onclick="navigate('mypage')" class="text-slate-600 mr-4"><i class="fa-solid fa-arrow-left text-lg"></i></button>
+                            <h2 class="text-base font-bold text-slate-800">차량 관리</h2>
+                        </div>
+
+                        <div class="bg-brand-50 border border-brand-200 rounded-2xl p-4 mb-4">
+                            <p class="text-xs font-bold text-brand-800">등록된 차량 번호</p>
+                            <p class="text-xl font-black text-brand-600 mt-1">${appState.carNumber}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">차량 번호 변경</label>
+                            <input type="text" id="edit-car-num" value="${appState.carNumber}" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:outline-none focus:border-brand-500 mb-4">
+                        </div>
+                    </div>
+
+                    <div>
+                        <button onclick="updateCarNum()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-2xl shadow-md transition-colors text-sm">
+                            저장하기
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateCarNum() {
+            const val = document.getElementById('edit-car-num').value;
+            if(val) appState.carNumber = val;
+            navigate('mypage');
+        }
+
+        // 앱 최초 실행 시 렌더링
+        render();
+    </script>
+</body>
+</html>
