@@ -293,294 +293,6 @@
         .rounded-26 { border-radius: 26px; }
         .rounded-22 { border-radius: 22px; }
 
-        .product-card {
-            position: relative;
-            overflow: hidden;
-            border-radius: 30px;
-            min-height: 190px;
-            background: linear-gradient(180deg, #1e52d7 0%, #1c49db 100%);
-            box-shadow: 0 22px 30px rgba(30, 77, 216, 0.20);
-        }
-
-        .product-card::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.20), transparent 28%);
-            pointer-events: none;
-        }
-
-        .product-figure {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transform: scale(1.08);
-        }
-
-        .product-figure .shape {
-            position: relative;
-            display: block;
-            width: 110px;
-            height: 110px;
-        }
-
-        .teapot {
-            width: 110px;
-            height: 112px;
-            border-radius: 50% 50% 40% 40% / 34% 34% 56% 56%;
-            background: linear-gradient(160deg, #f74d3a 0%, #d93d2e 100%);
-            border: 8px solid rgba(255,255,255,0.08);
-            box-shadow: inset -8px -8px 18px rgba(0,0,0,0.08), inset 8px 8px 18px rgba(255,255,255,0.10);
-            position: relative;
-        }
-
-        .teapot::before {
-            content: '';
-            position: absolute;
-            width: 34px;
-            height: 28px;
-            background: linear-gradient(160deg, #f74d3a, #d93d2e);
-            border-radius: 0 0 18px 18px;
-            left: 50%;
-            top: -18px;
-            transform: translateX(-50%);
-            box-shadow: inset -8px -8px 10px rgba(0,0,0,0.07);
-        }
-
-        .teapot::after {
-            content: '';
-            position: absolute;
-            width: 28px;
-            height: 18px;
-            border-radius: 40% 40% 50% 50%;
-            left: 50%;
-            transform: translateX(-50%);
-            bottom: -10px;
-            background: rgba(255,255,255,0.12);
-            border: 5px solid rgba(255,255,255,0.06);
-        }
-
-        .canister {
-            width: 104px;
-            height: 104px;
-            border-radius: 32px;
-            background: linear-gradient(180deg, #f4d35b 0%, #e5b830 100%);
-            box-shadow: inset -8px -8px 12px rgba(0,0,0,0.08), inset 8px 8px 14px rgba(255,255,255,0.15);
-            position: relative;
-        }
-
-        .canister::before {
-            content: '';
-            position: absolute;
-            inset: 18px;
-            border-radius: 16px;
-            background: rgba(255,255,255,0.12);
-        }
-
-        .mug {
-            width: 120px;
-            height: 120px;
-            position: relative;
-            border-radius: 28px 28px 38px 38px;
-            background: linear-gradient(180deg, #ff4d3f 0%, #ef3d2b 100%);
-            box-shadow: inset -12px -10px 14px rgba(0,0,0,0.09), inset 10px 10px 12px rgba(255,255,255,0.12);
-        }
-
-        .mug::before {
-            content: '';
-            position: absolute;
-            width: 18px;
-            height: 48px;
-            border-radius: 0 20px 20px 0;
-            right: -18px;
-            top: 26px;
-            border: 10px solid #ff4d3f;
-            border-left: none;
-            box-sizing: border-box;
-        }
-
-        .mug::after {
-            content: '';
-            position: absolute;
-            width: 80px;
-            height: 20px;
-            background: rgba(255,255,255,0.12);
-            border-radius: 999px;
-            left: 20px;
-            bottom: 14px;
-        }
-
-        .cylinder {
-            width: 120px;
-            height: 110px;
-            border-radius: 20px 20px 26px 26px;
-            background: linear-gradient(180deg, #0f5df6 0%, #1a65e9 100%);
-            box-shadow: inset -10px -8px 16px rgba(0,0,0,0.08), inset 8px 8px 14px rgba(255,255,255,0.12);
-            position: relative;
-        }
-
-        .mini-illustration {
-            width: 86px;
-            height: 86px;
-            border-radius: 22px;
-            background: linear-gradient(180deg, #0d63f7, #0d4fdb);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: inset 0 12px 18px rgba(255,255,255,0.10);
-        }
-
-        .mini-illustration .tiny-mug {
-            width: 44px;
-            height: 44px;
-            border-radius: 16px 16px 18px 18px;
-            background: linear-gradient(180deg, #ff5b48 0%, #ea3d2f 100%);
-            position: relative;
-        }
-
-        .mini-illustration .tiny-mug::before {
-            content: '';
-            position: absolute;
-            right: -8px;
-            top: 10px;
-            width: 10px;
-            height: 18px;
-            border: 4px solid #ff5b48;
-            border-left: none;
-            border-radius: 0 8px 8px 0;
-        }
-
-        .card-info {
-            position: absolute;
-            left: 16px;
-            right: 16px;
-            bottom: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            color: white;
-            font-weight: 800;
-            z-index: 2;
-        }
-
-        .card-info small {
-            opacity: 1;
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .like-badge {
-            width: 38px;
-            height: 38px;
-            border-radius: 12px;
-            background: rgba(255,255,255,0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: rgba(255,255,255,0.95);
-            border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(4px);
-        }
-
-        .map-bg {
-            background: linear-gradient(180deg, #dfe8ff 0%, #eaf0ff 100%);
-        }
-
-        .map-point {
-            position: absolute;
-            border-radius: 999px;
-            padding: 8px 12px;
-            font-size: 11px;
-            font-weight: 700;
-            color: #0f172a;
-            background: rgba(255,255,255,0.9);
-            box-shadow: 0 12px 30px rgba(15,23,42,0.08);
-        }
-
-        .map-point.primary {
-            background: linear-gradient(135deg, #2364f4 0%, #1d4ed8 100%);
-            color: white;
-        }
-
-        .map-grid {
-            background-image: radial-gradient(#c8d8ff 1px, transparent 1px);
-            background-size: 16px 16px;
-            opacity: 0.65;
-        }
-
-        .feature-card {
-            background: rgba(255,255,255,0.92);
-            border: 1px solid rgba(15,23,42,0.04);
-            border-radius: 26px;
-            box-shadow: 0 12px 24px rgba(15,23,42,0.05);
-        }
-
-        .progress-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 999px;
-            background: rgba(37,99,235,0.6);
-            display: inline-block;
-        }
-
-        .status-pill {
-            padding: 6px 12px;
-            border-radius: 999px;
-            background: rgba(37,99,235,0.08);
-            color: var(--brand);
-            font-size: 11px;
-            font-weight: 800;
-        }
-
-        .list-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 16px;
-            border-radius: 18px;
-            background: rgba(255,255,255,0.8);
-            border: 1px solid rgba(15,23,42,0.04);
-        }
-
-        .option-chip {
-            border: 1px solid rgba(37,99,235,0.08);
-            background: rgba(37,99,235,0.05);
-            border-radius: 999px;
-            padding: 10px 16px;
-            color: var(--brand);
-            font-weight: 700;
-        }
-
-        .primary-panel {
-            background: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(245,247,252,0.92));
-            border: 1px solid rgba(15,23,42,0.05);
-            box-shadow: 0 25px 45px rgba(15,23,42,0.06);
-        }
-
-        .action-bar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            justify-content: space-between;
-            padding: 14px 16px;
-            border-radius: 18px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(234,240,255,0.9));
-            border: 1px solid rgba(15,23,42,0.04);
-        }
-
-        .tiny-avatar {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #ffb199, #f68a81);
-            border: 2px solid rgba(255,255,255,0.8);
-        }
-
-        .tiny-avatar.two { background: linear-gradient(135deg, #6ee7b7, #34d399); }
-        .tiny-avatar.three { background: linear-gradient(135deg, #93c5fd, #60a5fa); }
-
         .camera-scan {
             position: relative;
             width: 200px;
@@ -613,6 +325,30 @@
             justify-content: center;
             font-size: 32px;
             box-shadow: inset 0 14px 24px rgba(255,255,255,0.8);
+        }
+
+        .quokka-scene {
+            width: 100%;
+            max-width: 240px;
+            margin: 0 auto;
+            position: relative;
+            animation: floatRide 2.8s ease-in-out infinite;
+        }
+
+        .quokka-scene.compact {
+            max-width: 180px;
+        }
+
+        @keyframes floatRide {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .quokka-scene svg {
+            display: block;
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 18px 24px rgba(37,99,235,0.18));
         }
 
         @media (max-width: 440px) {
@@ -680,6 +416,63 @@
             entryTime: null,
             timerInterval: null
         };
+
+        function renderQuokkaRide({ compact = false } = {}) {
+            return `
+                <div class="quokka-scene ${compact ? 'compact' : ''}">
+                    <svg viewBox="0 0 280 200" aria-label="쿼카가 차를 타는 일러스트" role="img">
+                        <defs>
+                            <linearGradient id="carBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#4c87ff"/>
+                                <stop offset="100%" stop-color="#1c4fe0"/>
+                            </linearGradient>
+                            <linearGradient id="glassBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#dfeeff"/>
+                                <stop offset="100%" stop-color="#cfe0ff"/>
+                            </linearGradient>
+                            <linearGradient id="quokkaFur" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#f3d2b8"/>
+                                <stop offset="100%" stop-color="#dca87a"/>
+                            </linearGradient>
+                        </defs>
+
+                        <ellipse cx="144" cy="178" rx="118" ry="15" fill="rgba(15,23,42,0.12)"/>
+
+                        <g transform="translate(0,8)">
+                            <rect x="46" y="92" width="170" height="58" rx="26" fill="url(#carBlue)"/>
+                            <rect x="86" y="58" width="94" height="46" rx="18" fill="url(#glassBlue)"/>
+                            <path d="M104 58 L142 26 L176 58 Z" fill="rgba(255,255,255,0.38)" opacity="0.75"/>
+                            <circle cx="94" cy="150" r="20" fill="#1f2937"/>
+                            <circle cx="200" cy="150" r="20" fill="#1f2937"/>
+                            <circle cx="94" cy="150" r="8" fill="#e5e7eb"/>
+                            <circle cx="200" cy="150" r="8" fill="#e5e7eb"/>
+                            <path d="M120 108 C124 89, 155 89, 160 108" fill="none" stroke="#9ec1ff" stroke-width="4" stroke-linecap="round"/>
+                            <rect x="124" y="104" width="46" height="20" rx="10" fill="rgba(255,255,255,0.22)"/>
+                        </g>
+
+                        <g transform="translate(72,54)">
+                            <ellipse cx="72" cy="80" rx="48" ry="36" fill="url(#quokkaFur)"/>
+                            <ellipse cx="68" cy="62" rx="42" ry="32" fill="url(#quokkaFur)"/>
+                            <circle cx="52" cy="38" r="10" fill="#f7d7b8"/>
+                            <circle cx="86" cy="38" r="10" fill="#f7d7b8"/>
+                            <circle cx="52" cy="40" r="5" fill="#1f2937"/>
+                            <circle cx="86" cy="40" r="5" fill="#1f2937"/>
+                            <circle cx="54" cy="22" r="7" fill="#f5c8a8"/>
+                            <circle cx="82" cy="22" r="7" fill="#f5c8a8"/>
+                            <ellipse cx="69" cy="52" rx="12" ry="9" fill="#fff"/>
+                            <circle cx="69" cy="52" r="6" fill="#f8b08a"/>
+                            <path d="M66 54 Q72 58 78 54" fill="none" stroke="#8d5f4a" stroke-width="3" stroke-linecap="round"/>
+                            <path d="M63 63 Q69 68 75 63" fill="none" stroke="#8d5f4a" stroke-width="3" stroke-linecap="round"/>
+                            <path d="M36 76 Q56 98 88 76" fill="none" stroke="#f0b98d" stroke-width="8" stroke-linecap="round"/>
+                            <path d="M104 74 Q122 90 116 100" fill="none" stroke="#f0b98d" stroke-width="8" stroke-linecap="round"/>
+                            <path d="M60 88 L42 110" stroke="#e7a77d" stroke-width="9" stroke-linecap="round"/>
+                            <path d="M78 90 L98 108" stroke="#e7a77d" stroke-width="9" stroke-linecap="round"/>
+                            <path d="M114 72 Q124 80 130 70" fill="none" stroke="#e7a77d" stroke-width="6" stroke-linecap="round"/>
+                        </g>
+                    </svg>
+                </div>
+            `;
+        }
 
         function updateClock() {
             const now = new Date();
@@ -787,9 +580,9 @@
             return `
                 <div class="h-full bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.9),_rgba(255,255,255,0.45)_18%,_transparent_40%)] px-6 pt-8 pb-6 bg-slate-50">
                     <div class="h-full flex flex-col justify-between">
-                        <div class="pt-10">
-                            <div class="w-[76px] h-[76px] mx-auto rounded-[28px] bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-4xl shadow-soft text-white">🚗</div>
-                            <div class="mt-8 text-center">
+                        <div class="pt-8">
+                            <div class="mb-8">${renderQuokkaRide()}</div>
+                            <div class="text-center">
                                 <span class="pill bg-amber-500/90 text-slate-900 text-[10px] tracking-[0.18em] uppercase">주차 서비스</span>
                                 <h1 class="screen-title text-[30px] leading-[1.1] mt-5">낯선 곳에서도<br>주차를 쉽게</h1>
                                 <p class="screen-subtitle text-sm mt-3 px-6 leading-6">목적지 주변 주차장 비교부터<br>차량번호 인식 입차, 앱 정산까지 한 번에</p>
@@ -1023,12 +816,10 @@
             return `
                 <div class="h-full bg-white px-6 py-7 flex flex-col justify-between">
                     <div class="text-center">
-                        <div class="camera-scan">
-                            <div class="icon"><i class="fa-solid fa-camera"></i></div>
-                        </div>
+                        <div class="mb-2">${renderQuokkaRide({ compact: true })}</div>
                         <span class="pill bg-brand-50 text-brand-600 text-[10px]">차량번호 자동 출입차 인식</span>
                         <h2 class="screen-title text-[26px] mt-4">입차 확인 중...</h2>
-                        <p class="text-[11px] text-slate-500 mt-2 leading-5">주��장 입구의 카메라가 번호판을 인식하여<br>입차 처리를 진행합니다.</p>
+                        <p class="text-[11px] text-slate-500 mt-2 leading-5">주차장 입구의 카메라가 번호판을 인식하여<br>입차 처리를 진행합니다.</p>
 
                         <div class="mt-7 rounded-[24px] border-2 border-dashed border-brand-200 bg-slate-50 p-5">
                             <p class="text-[11px] text-slate-400 font-bold">인식된 차량 번호</p>
@@ -1174,7 +965,7 @@
         function renderPaymentLoading() {
             return `
                 <div class="h-full bg-white flex flex-col items-center justify-center text-center px-6">
-                    <div class="w-16 h-16 border-[5px] border-brand-100 border-t-brand-500 rounded-full animate-spin mb-6"></div>
+                    <div class="mb-6">${renderQuokkaRide({ compact: true })}</div>
                     <h2 class="screen-title text-[22px]">결제 진행 중입니다</h2>
                     <p class="text-[11px] text-slate-500 mt-2 leading-5">잠시만 기다려주세요. 안전하게 결제 처리 중입니다.</p>
                 </div>
@@ -1185,7 +976,7 @@
             return `
                 <div class="h-full bg-white px-6 py-7 flex flex-col justify-between text-center">
                     <div class="pt-6">
-                        <div class="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center text-3xl shadow-inner mb-6"><i class="fa-solid fa-check"></i></div>
+                        <div class="mb-6">${renderQuokkaRide({ compact: true })}</div>
                         <span class="pill bg-emerald-100 text-emerald-700 text-[10px]">결제 완료</span>
                         <h2 class="screen-title text-[28px] mt-4">결제가 완료되었습니다!</h2>
 
@@ -1210,7 +1001,7 @@
             return `
                 <div class="h-full bg-white px-6 py-7 flex flex-col justify-between text-center">
                     <div class="pt-10">
-                        <div class="w-20 h-20 rounded-full bg-brand-100 text-brand-600 mx-auto flex items-center justify-center text-3xl shadow-inner mb-6"><i class="fa-solid fa-car-on"></i></div>
+                        <div class="mb-6">${renderQuokkaRide({ compact: true })}</div>
                         <span class="pill bg-brand-50 text-brand-600 text-[10px]">출차 완료</span>
                         <h2 class="screen-title text-[28px] mt-4">안전하게 출차되었습니다</h2>
                         <p class="text-[11px] text-slate-500 mt-2 leading-5">이용해 주셔서 감사합니다. 다음에 또 편리하게 이용하세요!</p>
